@@ -67,7 +67,7 @@ pipeline {
 
     stage('Terraform Plan') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-lab-creds']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
           script {
             if (isUnix()) {
               sh """
