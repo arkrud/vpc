@@ -1,88 +1,57 @@
-##########################################################
-# Terraform Core
-##########################################################
+####################################
+# Terraform
+####################################
 
 # Terraform working directory
-**/terraform/
+**/.terraform/
 
-# Terraform state (NEVER COMMIT)
+# Terraform state files (should be remote in prod)
 *.tfstate
-*.tfstate.*
-
-# Terraform plan files
-tfplan
-*.tfplan
+*.tfstate.backup
 
 # Crash logs
 crash.log
 crash.*.log
 
-##########################################################
-# Terraform Variable Files (may contain secrets)
-##########################################################
+# Terraform plan files (if you ever save them)
+*.tfplan
+*.out
 
-# All tfvars (generated or local)
-#*.tfvars
-#*.tfvars.json
+####################################
+# Terraform dependency lock file
+####################################
+
+# 👉 In production teams this is COMMITTED (not ignored)
+# Uncomment only if you truly don't want it tracked
+# .terraform.lock.hcl
+
+####################################
+# Secrets & environment
+####################################
+
+*.tfvars
 *.auto.tfvars
-*.auto.tfvars.json
 
-# Allow example files
-!*.tfvars.example
-!*.auto.tfvars.json.example
+# If you want to commit non-secret tfvars, explicitly allow:
+# !dev.tfvars
+# !qa.tfvars
+# !prod.tfvars
 
-##########################################################
-# Backend / CLI config (machine-specific)
-##########################################################
+.env
+.env.*
 
-.terraformrc
-terraform.rc
+####################################
+# IDE / OS junk
+####################################
 
-##########################################################
-# Jenkins Workspace Artifacts
-##########################################################
-
-# Dynamic per-account-region execution folders
-work/
-
-# Jenkins temp files
-@tmp/
-**/@tmp/
-
-##########################################################
-# IDE / OS Noise
-##########################################################
-
-# VS Code
 .vscode/
-
-# JetBrains
 .idea/
-
-# Mac
 .DS_Store
-
-# Windows
 Thumbs.db
-desktop.ini
 
-##########################################################
-# Logs
-##########################################################
+####################################
+# Jenkins / CI noise
+####################################
 
-*.log
-
-##########################################################
-# Local testing artifacts
-##########################################################
-
-# Local backend overrides (if ever used)
-# backend.tf
-backend_override.tf
-
-##########################################################
-# KEEP THIS TRACKED (important!)
-##########################################################
-
-# Keep provider lock file committed for reproducibility
-!.terraform.lock.hcl
+@tmp/
+workspace/
