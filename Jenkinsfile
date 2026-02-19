@@ -105,7 +105,7 @@ pipeline {
     stage('Terraform Apply / Destroy') {
       when { expression { params.ACTION in ['apply','destroy'] } }
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-lab-creds']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
           script {
             def approveFlag = params.AUTO_APPROVE ? "-auto-approve" : ""
             if (params.ACTION == 'apply') {
