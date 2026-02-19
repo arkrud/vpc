@@ -1,0 +1,88 @@
+##########################################################
+# Terraform Core
+##########################################################
+
+# Terraform working directory
+.terraform/
+
+# Terraform state (NEVER COMMIT)
+*.tfstate
+*.tfstate.*
+
+# Terraform plan files
+tfplan
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+##########################################################
+# Terraform Variable Files (may contain secrets)
+##########################################################
+
+# All tfvars (generated or local)
+#*.tfvars
+#*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Allow example files
+!*.tfvars.example
+!*.auto.tfvars.json.example
+
+##########################################################
+# Backend / CLI config (machine-specific)
+##########################################################
+
+.terraformrc
+terraform.rc
+
+##########################################################
+# Jenkins Workspace Artifacts
+##########################################################
+
+# Dynamic per-account-region execution folders
+work/
+
+# Jenkins temp files
+@tmp/
+**/@tmp/
+
+##########################################################
+# IDE / OS Noise
+##########################################################
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+##########################################################
+# Logs
+##########################################################
+
+*.log
+
+##########################################################
+# Local testing artifacts
+##########################################################
+
+# Local backend overrides (if ever used)
+# backend.tf
+backend_override.tf
+
+##########################################################
+# KEEP THIS TRACKED (important!)
+##########################################################
+
+# Keep provider lock file committed for reproducibility
+!.terraform.lock.hcl
