@@ -20,19 +20,31 @@ pipeline {
 
   stages {
     stage('Checkout ref') {
-      steps {
-        checkout scm
-        script {
-          // Ensure we deploy the exact code the user selected
-          sh "git fetch --all --tags --prune"
-          sh "git checkout ${params.GIT_REF}"
-          sh "git rev-parse HEAD > .git_commit"
-          env.DEPLOY_SHA = sh(script: "cat .git_commit", returnStdout: true).trim()
-          currentBuild.description = "Promote ${params.PROMOTE_TO} @ ${env.DEPLOY_SHA}"
-          echo "Deploying commit: ${env.DEPLOY_SHA}"
-        }
-      }
+  steps {
+    checkout scm
+    script {
+      sh """
+        set -e
+        git fetch --all --tags --prune
+
+        # If GIT_REF is a branch like 'main', force it to the latest origin/<branch>
+        if git show-ref --verify --quiet "refs/remotes/origin/${params.GIT_REF}"; then
+          git checkout -f ${params.GIT_REF}
+          git reset --hard origin/${params.GIT_REF}
+        else
+          # Otherwise assume it's a tag or commit SHA
+          git checkout -f ${params.GIT_REF}
+        fi
+
+        git rev-parse HEAD > .git_commit
+      """
+
+      env.DEPLOY_SHA = sh(script: "cat .git_commit", returnStdout: true).trim()
+      currentBuild.description = "Promote ${params.PROMOTE_TO} @ ${env.DEPLOY_SHA}"
+      echo "Deploying commit: ${env.DEPLOY_SHA}"
     }
+  }
+}
 
     stage('Select Environment') {
       steps {
