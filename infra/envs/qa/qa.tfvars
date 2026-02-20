@@ -4,7 +4,7 @@ environment = "qa"
 
 vpc_cidr = "10.20.0.0/16"
 
-azs = ["us-east-1a", "us-east-1b"]
+azs = ["us-east-1a", "us-east-1b","us-east-1c", "us-east-1d"]
 
 public_subnet_cidrs  = ["10.20.10.0/24", "10.20.11.0/24"]
 private_subnet_cidrs = ["10.20.20.0/24", "10.20.21.0/24","10.20.30.0/24", "10.30.31.0/24"]
