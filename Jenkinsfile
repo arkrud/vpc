@@ -62,7 +62,7 @@ pipeline {
 
     stage('Terraform Init') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-creds']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
           sh """
             set -e
             cd "${env.TF_DIR}"
@@ -78,7 +78,7 @@ pipeline {
 
     stage('Terraform Plan') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-creds']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
           sh """
             set -e
             cd "${env.TF_DIR}"
@@ -98,7 +98,7 @@ pipeline {
             input message: "Apply to DEV from main?", ok: "Apply"
           }
         }
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-creds']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
           sh """
             set -e
             cd "${env.TF_DIR}"
