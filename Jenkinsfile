@@ -7,7 +7,7 @@ pipeline {
   }
 
   parameters {
-    // Optional: keep for manual overrides, but rules below will force dev for PR/non-main
+    //   Optional: keep for manual overrides, but rules below will force dev for PR/non-main
     choice(name: 'ACTION', choices: ['plan', 'apply'], description: 'Terraform action (apply allowed only on main)')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     booleanParam(name: 'AUTO_APPROVE', defaultValue: false, description: 'Auto-approve apply (only used on main)')
