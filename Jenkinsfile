@@ -29,7 +29,7 @@ pipeline {
           def isPR = (env.CHANGE_ID?.trim())
           def isMain = (env.BRANCH_NAME == 'main')
 
-          // Mode A mapping: everything goes to DEV in this pipeline
+          //  Mode A mapping: everything goes to DEV in this pipeline
           env.ENV_NAME = 'dev'
           env.TF_DIR   = "infra/envs/dev"
           env.TFVARS   = "dev.tfvars"
@@ -90,6 +90,38 @@ pipeline {
       }
     }
 
+stage('Create PR to main') {
+  when {
+    expression { return env.BRANCH_NAME && env.BRANCH_NAME != 'main' }
+  }
+  steps {
+    withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+      sh """
+        set -e
+        export GH_TOKEN='${GH_TOKEN}'
+
+        REPO='arkrud/vpc'
+
+        # Create PR if it doesn't exist
+        if gh pr view --repo "\$REPO" --head "${env.BRANCH_NAME}" >/dev/null 2>&1; then
+          echo "PR already exists for ${env.BRANCH_NAME}"
+        else
+          gh pr create --repo "\$REPO" \\
+            --base main \\
+            --head "${env.BRANCH_NAME}" \\
+            --title "Promote ${env.BRANCH_NAME} to main" \\
+            --body "Automated PR created by Jenkins after successful Dev plan."
+        fi
+
+        # OPTIONAL: enable auto-merge (only merges after required reviews/checks)
+        # gh pr merge --repo "\$REPO" --head "${env.BRANCH_NAME}" --auto --merge
+      """
+    }
+  }
+}
+
+
+
     stage('Apply (main only)') {
       when { expression { env.EFFECTIVE_ACTION == 'apply' } }
       steps {
@@ -107,6 +139,22 @@ pipeline {
           """
         }
       }
+    }
+  }
+}
+
+stage('Trigger Promote QA') {
+  when { branch 'main' }
+  steps {
+    script {
+      def sha = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+      build job: 'Promote', parameters: [
+        string(name: 'GIT_REF', value: sha),
+        string(name: 'AWS_REGION', value: 'us-east-1'),
+        booleanParam(name: 'AUTO_APPROVE', value: false),
+        // PROMOTE_TO is a choice param in Promote job; value must match its choices
+        [$class: 'StringParameterValue', name: 'PROMOTE_TO', value: 'qa']
+      ]
     }
   }
 }
