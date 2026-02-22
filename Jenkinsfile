@@ -29,7 +29,7 @@ pipeline {
           def isPR = (env.CHANGE_ID?.trim())
           def isMain = (env.BRANCH_NAME == 'main')
 
-          // Mode A mapping: everything goes to DEV in this pipeline
+          //  Mode A mapping: everything goes to DEV in this pipeline
           env.ENV_NAME = 'dev'
           env.TF_DIR   = "infra/envs/dev"
           env.TFVARS   = "dev.tfvars"
@@ -90,6 +90,47 @@ pipeline {
       }
     }
 
+stage('Create PR to main') {
+  when {
+    allOf {
+      expression { return env.BRANCH_NAME && env.BRANCH_NAME != 'main' }
+      expression { return !env.CHANGE_ID }   // <-- skip PR builds (PR-7 etc.)
+    }
+  }
+  steps {
+    withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+      sh """
+        set -e
+        export GH_TOKEN='${GH_TOKEN}'
+        REPO='arkrud/vpc'
+        HEAD='${env.BRANCH_NAME}'
+
+        # If PR already exists for this branch, do nothing
+        if gh pr view --repo "\$REPO" --head "\$HEAD" >/dev/null 2>&1; then
+          echo "PR already exists for branch \$HEAD"
+          exit 0
+        fi
+
+        # If there's nothing to merge, don't try to create a PR
+        if git log --oneline origin/main..HEAD | head -n 1 >/dev/null 2>&1; then
+          echo "Branch has commits not in main; creating PR..."
+        else
+          echo "No commits between main and \$HEAD; skipping PR creation."
+          exit 0
+        fi
+
+        gh pr create --repo "\$REPO" \\
+          --base main \\
+          --head "\$HEAD" \\
+          --title "Promote \$HEAD to main" \\
+          --body "Automated PR created by Jenkins after successful Dev plan."
+      """
+    }
+  }
+}
+
+
+
     stage('Apply (main only)') {
       when { expression { env.EFFECTIVE_ACTION == 'apply' } }
       steps {
@@ -108,5 +149,23 @@ pipeline {
         }
       }
     }
+  
+
+stage('Trigger Promote QA') {
+  when { branch 'main' }
+  steps {
+    script {
+      def sha = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+      build job: 'Promote', parameters: [
+        string(name: 'GIT_REF', value: sha),
+        string(name: 'AWS_REGION', value: 'us-east-1'),
+        booleanParam(name: 'AUTO_APPROVE', value: false),
+        // PROMOTE_TO is a choice param in Promote job; value must match its choices
+        [$class: 'StringParameterValue', name: 'PROMOTE_TO', value: 'qa']
+      ]
+    }
   }
+}
+
+}
 }
