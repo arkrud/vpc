@@ -140,8 +140,7 @@ stage('Create PR to main') {
         }
       }
     }
-  }
-}
+  
 
 stage('Trigger Promote QA') {
   when { branch 'main' }
@@ -157,4 +156,7 @@ stage('Trigger Promote QA') {
       ]
     }
   }
+}
+
+}
 }
