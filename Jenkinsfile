@@ -92,29 +92,38 @@ pipeline {
 
 stage('Create PR to main') {
   when {
-    expression { return env.BRANCH_NAME && env.BRANCH_NAME != 'main' }
+    allOf {
+      expression { return env.BRANCH_NAME && env.BRANCH_NAME != 'main' }
+      expression { return !env.CHANGE_ID }   // <-- skip PR builds (PR-7 etc.)
+    }
   }
   steps {
     withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
       sh """
         set -e
         export GH_TOKEN='${GH_TOKEN}'
-
         REPO='arkrud/vpc'
+        HEAD='${env.BRANCH_NAME}'
 
-        # Create PR if it doesn't exist
-        if gh pr view --repo "\$REPO" --head "${env.BRANCH_NAME}" >/dev/null 2>&1; then
-          echo "PR already exists for ${env.BRANCH_NAME}"
-        else
-          gh pr create --repo "\$REPO" \\
-            --base main \\
-            --head "${env.BRANCH_NAME}" \\
-            --title "Promote ${env.BRANCH_NAME} to main" \\
-            --body "Automated PR created by Jenkins after successful Dev plan."
+        # If PR already exists for this branch, do nothing
+        if gh pr view --repo "\$REPO" --head "\$HEAD" >/dev/null 2>&1; then
+          echo "PR already exists for branch \$HEAD"
+          exit 0
         fi
 
-        # OPTIONAL: enable auto-merge (only merges after required reviews/checks)
-        # gh pr merge --repo "\$REPO" --head "${env.BRANCH_NAME}" --auto --merge
+        # If there's nothing to merge, don't try to create a PR
+        if git log --oneline origin/main..HEAD | head -n 1 >/dev/null 2>&1; then
+          echo "Branch has commits not in main; creating PR..."
+        else
+          echo "No commits between main and \$HEAD; skipping PR creation."
+          exit 0
+        fi
+
+        gh pr create --repo "\$REPO" \\
+          --base main \\
+          --head "\$HEAD" \\
+          --title "Promote \$HEAD to main" \\
+          --body "Automated PR created by Jenkins after successful Dev plan."
       """
     }
   }
