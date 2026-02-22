@@ -156,7 +156,7 @@ stage('Trigger Promote QA') {
   steps {
     script {
       def sha = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-      build job: 'Promote', parameters: [
+      build job: 'promote', parameters: [
         string(name: 'GIT_REF', value: sha),
         string(name: 'AWS_REGION', value: 'us-east-1'),
         booleanParam(name: 'AUTO_APPROVE', value: false),
