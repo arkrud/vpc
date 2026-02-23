@@ -1,3 +1,10 @@
+pipeline {
+  agent any
+options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
 parameters {
   choice(name: 'ENVIRONMENT', choices: ['dev','qa','prod'], description: 'Environment')
   choice(name: 'ACTION', choices: ['destroy-plan','destroy'], description: 'What to do')
@@ -91,4 +98,5 @@ stages {
       }
     }
   }
+}
 }
