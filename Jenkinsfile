@@ -124,6 +124,12 @@ stage('Create PR to main') {
           --head "\$HEAD" \\
           --title "Promote \$HEAD to main" \\
           --body "Automated PR created by Jenkins after successful Dev plan."
+        # OPTIONAL: request reviewers / add labels
+        # gh pr edit --repo "\$REPO" --head "${env.BRANCH_NAME}" --add-reviewer user1,user2
+        # gh pr edit --repo "\$REPO" --head "${env.BRANCH_NAME}" --add-label terraform,needs-review
+
+        # OPTIONAL: enable auto-merge (requires GitHub repo setting + branch protections)
+        # gh pr merge --repo "\$REPO" --head "${env.BRANCH_NAME}" --auto --merge 
       """
     }
   }

@@ -1,0 +1,94 @@
+parameters {
+  choice(name: 'ENVIRONMENT', choices: ['dev','qa','prod'], description: 'Environment')
+  choice(name: 'ACTION', choices: ['destroy-plan','destroy'], description: 'What to do')
+  string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
+
+  // Must type EXACTLY: DESTROY-dev / DESTROY-qa / DESTROY-prod
+  string(name: 'CONFIRM_DESTROY', defaultValue: '', description: 'Required only for destroy. Type DESTROY-<env>.')
+}
+
+environment {
+  TF_IN_AUTOMATION = 'true'
+  TF_INPUT         = 'false'
+}
+
+stages {
+  stage('Select Environment') {
+    steps {
+      script {
+        env.TF_DIR = "infra/envs/${params.ENVIRONMENT}"
+        env.TFVARS = "${params.ENVIRONMENT}.tfvars"
+        env.PLAN_FILE = "tfplan-${params.ENVIRONMENT}.out"
+        env.DESTROY_PLAN_FILE = "tfplan-destroy-${params.ENVIRONMENT}.out"
+      }
+      sh """
+        set -e
+        test -d "${env.TF_DIR}"
+        ls -la "${env.TF_DIR}"
+      """
+    }
+  }
+
+  stage('Terraform Init') {
+    steps {
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
+        sh """
+          set -e
+          cd "${env.TF_DIR}"
+          export AWS_DEFAULT_REGION='${params.AWS_REGION}'
+          aws sts get-caller-identity
+          terraform init -reconfigure
+        """
+      }
+    }
+  }
+
+  
+  stage('Destroy Plan') {
+    when { expression { params.ACTION == 'destroy-plan' } }
+    steps {
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
+        sh """
+          set -e
+          cd "${env.TF_DIR}"
+          export AWS_DEFAULT_REGION='${params.AWS_REGION}'
+          terraform validate
+          terraform plan -destroy -var-file="${env.TFVARS}" -out="${env.DESTROY_PLAN_FILE}"
+        """
+      }
+    }
+  }
+
+  stage('Destroy Approval') {
+    when { expression { params.ACTION == 'destroy' } }
+    steps {
+      script {
+        def expected = "DESTROY-${params.ENVIRONMENT}"
+        if (params.CONFIRM_DESTROY != expected) {
+          error("Refusing to destroy. CONFIRM_DESTROY must equal '${expected}'.")
+        }
+        // Extra protection for prod
+        if (params.ENVIRONMENT == 'prod') {
+          input message: "FINAL CONFIRMATION: Destroy PROD VPC? This is irreversible.", ok: "Destroy PROD"
+        } else {
+          input message: "Destroy ${params.ENVIRONMENT.toUpperCase()} VPC? This is irreversible.", ok: "Destroy"
+        }
+      }
+    }
+  }
+
+  stage('Destroy') {
+    when { expression { params.ACTION == 'destroy' } }
+    steps {
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'arr-lab-aws']]) {
+        sh """
+          set -e
+          cd "${env.TF_DIR}"
+          export AWS_DEFAULT_REGION='${params.AWS_REGION}'
+          terraform plan -destroy -var-file="${env.TFVARS}" -out="${env.DESTROY_PLAN_FILE}"
+          terraform apply -auto-approve "${env.DESTROY_PLAN_FILE}"
+        """
+      }
+    }
+  }
+}
